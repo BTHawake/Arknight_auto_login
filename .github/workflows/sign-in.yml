@@ -3,9 +3,10 @@ name: Skland Auto Sign In
 on:
   workflow_dispatch: # 允许手动点击运行
   schedule:
-    # 每天北京时间早上 8 点运行 (UTC 时间 0 点 = 北京时间 8 点)
-    - cron: "0 0 * * *"
-
+    # 每天北京时间早上 5 点运行 (UTC 时间 21:00)
+    - cron: "0 21 * * *"
+    # 每天北京时间下午 1 点运行 (UTC 时间 5:00)
+    - cron: "0 5 * * *"
 jobs:
   sign-in:
     runs-on: ubuntu-latest
