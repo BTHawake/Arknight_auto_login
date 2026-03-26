@@ -1,0 +1,32 @@
+name: Skland Auto Sign In
+
+on:
+  workflow_dispatch: # 允许手动点击运行
+  schedule:
+    # 每天北京时间早上 8 点运行 (UTC 时间 0 点 = 北京时间 8 点)
+    - cron: "0 0 * * *"
+
+jobs:
+  sign-in:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SKLAND_TOKEN: ${{ secrets.SKLAND_TOKEN }}
+      SKLAND_TOKENS: ${{ secrets.SKLAND_TOKENS }}
+      SKLAND_USERS_JSON: ${{ secrets.SKLAND_USERS_JSON }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip' # 开启 pip 缓存加速运行
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行签到脚本
+        run: python main.py
