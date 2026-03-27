@@ -12,6 +12,7 @@ logger = logging.getLogger("SklandAutoSign")
 
 def _parse_users_from_env() -> list[dict]:
     """从环境变量中（Github里的secret里）读取Token"""
+    # 注意 1、2、3 是优先级
     # 1. 解析多账号 JSON 格式----保留原来项目的留下的功能，一起写了，不过一般多人的话直接用多行Token就行了，教程里没放实际能用
     users_json = os.getenv("SKLAND_USERS_JSON", "").strip()
     if users_json:
@@ -46,16 +47,17 @@ def _parse_users_from_env() -> list[dict]:
 
 
 async def run_sign_in():
-    # 关掉底层库中网络请求相关的日志，因为超级多会刷屏
+    # 关掉底层库中网络请求相关的日志，这个日志超级多会刷屏
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     users = _parse_users_from_env()
-    if not users:#滚木就是没Token
+    # 滚木就是没Token
+    if not users:
         logger.warning("未发现有效账号，请在 GitHub Secrets 中配置 SKLAND_TOKEN 或 SKLAND_TOKENS")
         return
-
-    api = SklandAPI(max_retries=3)# 初始化SklandAPI，最大重试3次
+    # 初始化SklandAPI，最大重试3次
+    api = SklandAPI(max_retries=3)
     logger.info(f"🚀 开始执行签到任务，共计 {len(users)} 个账号")
 
     # user -> token , index -> 第几个账号 这个类型返回值pair类型为(序号,token)差点搞错了
