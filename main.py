@@ -5,14 +5,14 @@ import logging
 import os
 from skland_api import SklandAPI
 
-# 初始化基础日志
+# 日志初始化
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("SklandAutoSign")
 
 
 def _parse_users_from_env() -> list[dict]:
-    """从环境变量中解析账号信息 (专为 GitHub Actions 设计)"""
-    # 1. 尝试解析多账号 JSON 格式
+    """从环境变量中（Github里的secret里）读取Token"""
+    # 1. 解析多账号 JSON 格式----保留原来项目的留下的功能，一起写了，不过一般多人的话直接用多行Token就行了，教程里没放实际能用
     users_json = os.getenv("SKLAND_USERS_JSON", "").strip()
     if users_json:
         try:
@@ -29,7 +29,7 @@ def _parse_users_from_env() -> list[dict]:
         except Exception as e:
             logger.error(f"解析 SKLAND_USERS_JSON 失败: {e}")
 
-    # 2. 尝试解析多行 Token
+    # 2. 解析多行 Token
     tokens_raw = os.getenv("SKLAND_TOKENS", "").strip()
     if tokens_raw:
         normalized = tokens_raw.replace(",", "\n")
@@ -37,27 +37,28 @@ def _parse_users_from_env() -> list[dict]:
         if tokens:
             return [{"nickname": f"账号{i}", "token": t} for i, t in enumerate(tokens, 1)]
 
-    # 3. 尝试解析单 Token
+    # 3. 解析单 Token
     single_token = os.getenv("SKLAND_TOKEN", "").strip()
     if single_token:
         return [{"nickname": "主账号", "token": single_token}]
 
-    return []
+    return []#什么都没有返回滚木
 
 
 async def run_sign_in():
-    # 调整底层库日志等级，避免刷屏
+    # 关掉底层库中网络请求相关的日志，因为超级多会刷屏
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     users = _parse_users_from_env()
-    if not users:
+    if not users:#滚木就是没Token
         logger.warning("未发现有效账号，请在 GitHub Secrets 中配置 SKLAND_TOKEN 或 SKLAND_TOKENS")
         return
 
-    api = SklandAPI(max_retries=3)
+    api = SklandAPI(max_retries=3)# 初始化SklandAPI，最大重试3次
     logger.info(f"🚀 开始执行签到任务，共计 {len(users)} 个账号")
 
+    # user -> token , index -> 第几个账号 这个类型返回值pair类型为(序号,token)差点搞错了
     for index, user in enumerate(users, 1):
         nickname_cfg = user.get("nickname", "未知用户")
         token = user.get("token")
@@ -65,7 +66,7 @@ async def run_sign_in():
         logger.info(f"[{index}/{len(users)}] 正在处理账号: {nickname_cfg}")
 
         if not token:
-            logger.error(f"  ❌ [{nickname_cfg}] 未配置 Token，跳过")
+            logger.error(f"  ❌ [{nickname_cfg}] 滚木Token，跳过")
             continue
 
         try:
@@ -77,7 +78,7 @@ async def run_sign_in():
                 continue
 
             for r in results:
-                # 判断是否已经签到过
+                # 判断是否已经签到过,这个api库会分别跑明日方舟和终末地
                 is_signed_already = not r.success and any(k in r.error for k in ["已签到", "重复", "already"])
 
                 if r.success:
@@ -91,7 +92,7 @@ async def run_sign_in():
         except Exception as e:
             logger.error(f"  ❌ [{nickname_cfg}] 执行异常: {str(e)}")
 
-        # 账号之间稍微间隔一下，避免请求过快
+        # 睡一会儿
         await asyncio.sleep(2)
 
     await api.close()
