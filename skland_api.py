@@ -403,13 +403,13 @@ class SklandAPI:
         return headers
 
     # ==================== Binding & Sign-In ====================
-
+    # w:获取玩家游戏列表
     async def get_binding_list(self, cred: Credential) -> list[UserBinding]:
         """Get user's game bindings"""
         did = await self.get_device_id()
         url = "https://zonai.skland.com/api/v1/game/player/binding"
         headers = self._get_signed_headers(url, "GET", None, cred, did)
-
+        # w:发送GET请求获取一个json对象，下面的代码就是解析这个对象
         response = await self._request("GET", url, headers=headers)
 
         if response.get("code") != 0:
@@ -419,6 +419,7 @@ class SklandAPI:
             raise Exception(f"获取绑定列表失败: {msg}")
 
         bindings = []
+        # w:这边代码用两次get慢慢从外层剥到内层挺不错的，我项目需要学习这种解析,之前不懂直接data[][]
         for item in response.get("data", {}).get("list", []):
             app_code = item.get("appCode", "")
             if app_code not in ("arknights", "endfield"):
