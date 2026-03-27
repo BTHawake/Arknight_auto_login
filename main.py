@@ -78,7 +78,7 @@ async def run_sign_in():
                 continue
 
             for r in results:
-                # 判断是否已经签到过,这个api库会分别跑明日方舟和终末地
+                # 看看签到明日方舟和终末地返回的结果
                 is_signed_already = not r.success and any(k in r.error for k in ["已签到", "重复", "already"])
 
                 if r.success:
