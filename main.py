@@ -43,7 +43,8 @@ def _parse_users_from_env() -> list[dict]:
     if single_token:
         return [{"nickname": "主账号", "token": single_token}]
 
-    return []#什么都没有返回滚木
+    # 什么都没有返回滚木
+    return []
 
 
 async def run_sign_in():
